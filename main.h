@@ -24,6 +24,7 @@ typedef struct CatStore {
 
 char ** readBreeds(int *count);
 char* getCharPtrByBreed(char **dictionary, char *breedName, int breedCount);
+
 CatStore *createStore(int kennelCount, int breedCount, char ** dictionary);
 Kennel* createKennels(int **constraints, int kennelCount, int breedCount, char **dictionary);
 Cat **createCats(char **dictionary, int breedCount, int count);
@@ -36,3 +37,6 @@ void removeCatFromKennel(Kennel *k, Cat *cat);
 void runQueries(CatStore *s, char **dictionary, int breedCount, int numQueries);
 void freeBreeds(char **dictionary, int breedCount);
 void freeStore(int count, CatStore *store);
+
+//custom functions
+void printCatStore(CatStore *catStore, int breedCount, char **dictionary);
