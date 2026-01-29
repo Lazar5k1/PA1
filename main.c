@@ -7,35 +7,37 @@ int main(){
     char **dictionary; //to store array of dynamically allocated strings for breeds types (e.g., {"Ragdoll","Siamese", "Maincoone"})
     int breedCount; //number of breed types
     int kennelCount; //number of kennels
-    CatStore* catStore; //store of cats
+    CatStore* store; //store of cats
 
     dictionary = readBreeds(&breedCount); //array of breeds
     scanf("%d", &kennelCount); //inputs num of kennels
-    catStore = createStore(kennelCount, breedCount, dictionary); //calls a bunch of functions and makes a store
-    // printCatStore(catStore, breedCount, dictionary); //debug function for checking input
+    store = createStore(kennelCount, breedCount, dictionary); //calls a bunch of functions and makes a store
+    // printCatStore(store, breedCount, dictionary); //debug function for checking input
+
+    int temp = canMoveTo(store, store->kennels->location, dictionary[0], dictionary, breedCount);
 
     freeBreeds(dictionary, breedCount); //frees all memory associated with dictionary
-    freeStore(kennelCount, catStore); //frees all memory associated with catStore
+    freeStore(kennelCount, store); //frees all memory associated with store
 
     return 0;
 }
 
-void printCatStore(CatStore *catStore, int breedCount, char **dictionary){ //prints out all input before query section
+void printCatStore(CatStore *store, int breedCount, char **dictionary){ //prints out all input before query section
     printf("%d\n", breedCount);
     for(int i = 0; i < breedCount; i++){
         printf("%s\n", dictionary[i]);
     }
-    printf("%d\n", catStore->numKenels);
-    for(int i = 0; i < catStore->numKenels; i++){
+    printf("%d\n", store->numKenels);
+    for(int i = 0; i < store->numKenels; i++){
         for(int j = 0; j < breedCount; j++){
-            printf("%d ", catStore->capacities[i][j]);
+            printf("%d ", store->capacities[i][j]);
         }
         printf("\n");
     }
-    for(int i = 0; i < catStore->numKenels; i++){
-        printf("%s %d\n", catStore->kennels[i].location, catStore->kennels[i].occupancy);
-        for(int j = 0; j < catStore->kennels[i].occupancy; j++){
-            printf("%s %d %.2f %s\n", catStore->kennels[i].cats[j]->name, catStore->kennels[i].cats[j]->age, catStore->kennels[i].cats[j]->weight, catStore->kennels[i].cats[j]->breed);
+    for(int i = 0; i < store->numKenels; i++){
+        printf("%s %d\n", store->kennels[i].location, store->kennels[i].occupancy);
+        for(int j = 0; j < store->kennels[i].occupancy; j++){
+            printf("%s %d %.2f %s\n", store->kennels[i].cats[j]->name, store->kennels[i].cats[j]->age, store->kennels[i].cats[j]->weight, store->kennels[i].cats[j]->breed);
         }
     }
 }
@@ -63,20 +65,20 @@ char* getCharPtrByBreed(char **dictionary, char *breedName, int breedCount){ //r
 }
 
 CatStore *createStore(int kennelCount, int breedCount, char ** dictionary){ //master function that branches off into other mini functions in a chain reaction. Creates a CatStore and takes input for all of its values and allocates memory accordingly
-    CatStore *catStore = (CatStore*)malloc(sizeof(CatStore)); //allocates memory for catStore
+    CatStore *store = (CatStore*)malloc(sizeof(CatStore)); //allocates memory for store
 
-    catStore->capacities = (int**)malloc(kennelCount * sizeof(int*)); //allocates and reads input into catStore->capacities
+    store->capacities = (int**)malloc(kennelCount * sizeof(int*)); //allocates and reads input into store->capacities
     for(int i = 0; i < kennelCount; i++){
-        catStore->capacities[i] = (int*)malloc(breedCount * sizeof(int));
+        store->capacities[i] = (int*)malloc(breedCount * sizeof(int));
         for(int j = 0; j < breedCount; j++){
 
-            scanf("%d", &catStore->capacities[i][j]);
+            scanf("%d", &store->capacities[i][j]);
         }
     }
-    catStore->numKenels = kennelCount; //inputs kennel count into numkennels
-    catStore->kennels = createKennels(catStore->capacities, kennelCount, breedCount, dictionary); //creates, allocates, and reads input into an array of kennels. Then stores them in catStore.
+    store->numKenels = kennelCount; //inputs kennel count into numkennels
+    store->kennels = createKennels(store->capacities, kennelCount, breedCount, dictionary); //creates, allocates, and reads input into an array of kennels. Then stores them in store.
 
-    return catStore;
+    return store;
 }
 
 Kennel* createKennels(int **constraints, int kennelCount, int breedCount, char **dictionary){ //creates the kennels within the store. calls upon createCats() to make cats
@@ -125,8 +127,35 @@ Cat* createSingleCat(char **dictionary, int breedCount){ //makes a cat.
     return cat;
 }
 
-int canMoveTo(CatStore *s, char *location, char *breed, char **dictionary, int breedCount){
+int canMoveTo(CatStore *s, char *location, char *breed, char **dictionary, int breedCount){ //returns 1 if chosen breed can be moved into chosen location, 0 if not.
+    for(int i = 0; i < s->numKenels; i++){
+        if(strcmp(location, s->kennels[i].location) == 0){
+            if(s->kennels[i].occupancy >= s->kennels[i].maxCapacity){ //return if kennel is full
+                return 0;
+            }
 
+            int totalBreed = 0;
+            for(int j = 0; j < s->kennels[i].occupancy; j++){ //checks how many of each cat is the same as breed
+                if(strcmp(breed, s->kennels[i].cats[j]->breed) == 0){
+                    totalBreed++;
+                }
+            }
+            
+            int breedIndex = -1;
+            for(int j = 0; j < breedCount; j++){ //finds breed index in capacities
+                if(strcmp(breed, dictionary[j]) == 0){
+                    breedIndex = j;
+                }
+            }
+            if(totalBreed < s->capacities[i][breedIndex]){ //can fit or not
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
+    }
+    return 0; //default can't find location
 }
 
 Kennel *getKennelByCat(CatStore *s, Cat *cat){
