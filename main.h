@@ -39,4 +39,6 @@ void freeBreeds(char **dictionary, int breedCount);
 void freeStore(int count, CatStore *store);
 
 //custom functions
-void printCatStore(CatStore *catStore, int breedCount, char **dictionary);
+void printCatStore(CatStore *catStore, int breedCount, char **dictionary); //old function for testing if input was valid
+void printByBreed(CatStore *s, char *breed);
+void updateStatus(CatStore *s, int status, char *name);

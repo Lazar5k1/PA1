@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "main.h"
+#include "leak_detector_c.h"
+
 
 int main(){
+    atexit(report_mem_leak);
     char **dictionary; //to store array of dynamically allocated strings for breeds types (e.g., {"Ragdoll","Siamese", "Maincoone"})
     int breedCount; //number of breed types
     int kennelCount; //number of kennels
@@ -14,32 +17,14 @@ int main(){
     store = createStore(kennelCount, breedCount, dictionary); //calls a bunch of functions and makes a store
     // printCatStore(store, breedCount, dictionary); //debug function for checking input
 
-    int temp = canMoveTo(store, store->kennels->location, dictionary[0], dictionary, breedCount);
+    int numQueries;
+    scanf("%d", &numQueries);
+    runQueries(store, dictionary, breedCount, numQueries);
 
     freeBreeds(dictionary, breedCount); //frees all memory associated with dictionary
     freeStore(kennelCount, store); //frees all memory associated with store
 
     return 0;
-}
-
-void printCatStore(CatStore *store, int breedCount, char **dictionary){ //prints out all input before query section
-    printf("%d\n", breedCount);
-    for(int i = 0; i < breedCount; i++){
-        printf("%s\n", dictionary[i]);
-    }
-    printf("%d\n", store->numKenels);
-    for(int i = 0; i < store->numKenels; i++){
-        for(int j = 0; j < breedCount; j++){
-            printf("%d ", store->capacities[i][j]);
-        }
-        printf("\n");
-    }
-    for(int i = 0; i < store->numKenels; i++){
-        printf("%s %d\n", store->kennels[i].location, store->kennels[i].occupancy);
-        for(int j = 0; j < store->kennels[i].occupancy; j++){
-            printf("%s %d %.2f %s\n", store->kennels[i].cats[j]->name, store->kennels[i].cats[j]->age, store->kennels[i].cats[j]->weight, store->kennels[i].cats[j]->breed);
-        }
-    }
 }
 
 char ** readBreeds(int *count){ //takes input from first couple of lines, creates dictionary of breeds and allocates its memory
@@ -55,7 +40,7 @@ char ** readBreeds(int *count){ //takes input from first couple of lines, create
     return breeds;
 }
 
-char* getCharPtrByBreed(char **dictionary, char *breedName, int breedCount){ //returns breed index from dictionary (used in create cat function as to not anger ahmed our beloved by not allocating memory)
+char* getCharPtrByBreed(char **dictionary, char *breedName, int breedCount){ //returns breed index from dictionary
     for(int i = 0; i < breedCount; i++){
         if(strcmp(breedName, dictionary[i]) == 0){
             return dictionary[i];
@@ -159,23 +144,68 @@ int canMoveTo(CatStore *s, char *location, char *breed, char **dictionary, int b
 }
 
 Kennel *getKennelByCat(CatStore *s, Cat *cat){
-
+    for(int i =0; i < s->numKenels; i++){
+        for(int j = 0; j < s->kennels[i].occupancy; j++){
+            if(cat == s->kennels[i].cats[j]){
+                return &s->kennels[i];
+            }
+        }
+    }
+    return NULL;
 }
 
 int getCatPosi(Kennel *home, Cat *cat){
-
+    for(int i =0; i < home->occupancy; i++){
+        if(cat == home->cats[i]){
+            return i;
+        }
+    }
+    return -1;
 }
 
 Cat *getCatByName(CatStore *s, char *catName){
-
+    for(int i =0; i < s->numKenels; i++){
+        for(int j = 0; j < s->kennels[i].occupancy; j++){
+            if(strcmp(catName, s->kennels[i].cats[j]->name) == 0){
+                return s->kennels[i].cats[j];
+            }
+        }
+    }
+    return NULL;
 }
 
 void removeCatFromKennel(Kennel *k, Cat *cat){
+    int catPos = getCatPosi(k, cat);
 
+    if(catPos == -1){
+        return;
+    }
+    for(int i = catPos; i < k->occupancy - 1; i++){
+        k->cats[i] == k->cats[i + 1];
+    }
+    k->occupancy--;
 }
 
 void runQueries(CatStore *s, char **dictionary, int breedCount, int numQueries){
+    int type;
+    char breed[26];
+    int status;
+    char name[26];
 
+    for(int i = 0; i < numQueries; i++){
+        scanf("%d", &type);
+        if(type == 1){
+            scanf("%s", breed);
+            printByBreed(s, breed);
+        }
+        else if(type == 2){
+            scanf("%d %s", status, name);
+            updateStatus(s, status, name);
+        }
+        else if(type == 3){
+
+        }
+    }
 }
 
 void freeBreeds(char **dictionary, int breedCount){ //frees dictionary and breed memory
@@ -201,3 +231,52 @@ void freeStore(int count, CatStore *store){ //frees all memory used in store
     free(store->capacities);
     free(store);
 }
+
+void printCatStore(CatStore *store, int breedCount, char **dictionary){ //prints out all input before query section
+    printf("%d\n", breedCount);
+    for(int i = 0; i < breedCount; i++){
+        printf("%s\n", dictionary[i]);
+    }
+    printf("%d\n", store->numKenels);
+    for(int i = 0; i < store->numKenels; i++){
+        for(int j = 0; j < breedCount; j++){
+            printf("%d ", store->capacities[i][j]);
+        }
+        printf("\n");
+    }
+    for(int i = 0; i < store->numKenels; i++){
+        printf("%s %d\n", store->kennels[i].location, store->kennels[i].occupancy);
+        for(int j = 0; j < store->kennels[i].occupancy; j++){
+            printf("%s %d %.2f %s\n", store->kennels[i].cats[j]->name, store->kennels[i].cats[j]->age, store->kennels[i].cats[j]->weight, store->kennels[i].cats[j]->breed);
+        }
+    }
+}
+
+void printByBreed(CatStore *s, char *breed){ //moves through every cat, asks if it is selected breed, if so then print out its content
+    int exists = 0;
+    
+    for(int i =0; i < s->numKenels; i++){
+        for(int j = 0; j < s->kennels[i].occupancy; j++){
+            if(strcmp(breed, s->kennels[i].cats[j]->breed) == 0){
+                printf("%s %.2f %d %s %s\n", s->kennels[i].cats[j]->name, s->kennels[i].cats[j]->weight, s->kennels[i].cats[j]->age, s->kennels[i].location, STATUS_CAT[s->kennels[i].cats[j]->status]);
+                exists = 1;
+            }
+        }
+    }
+    if(!exists){
+        printf("No cat with breed %s\n", breed);
+    }
+}
+
+void updateStatus(CatStore *s, int status, char *name){
+    Cat *cat = getCatByName(s, name);
+    Kennel *k = getKennelByCat(s, cat);
+    if(status == 0){
+        removeCatFromKennel(k, cat);
+    }
+    else{
+        cat->status = status;
+    }
+    printf("%s is now %s!\n", name, STATUS_CAT[status]);
+}
+
