@@ -181,7 +181,7 @@ void removeCatFromKennel(Kennel *k, Cat *cat){
         return;
     }
     for(int i = catPos; i < k->occupancy - 1; i++){
-        k->cats[i] == k->cats[i + 1];
+        k->cats[i] = k->cats[i + 1];
     }
     k->occupancy--;
 }
@@ -191,6 +191,7 @@ void runQueries(CatStore *s, char **dictionary, int breedCount, int numQueries){
     char breed[26];
     int status;
     char name[26];
+    char location[26];
 
     for(int i = 0; i < numQueries; i++){
         scanf("%d", &type);
@@ -199,11 +200,12 @@ void runQueries(CatStore *s, char **dictionary, int breedCount, int numQueries){
             printByBreed(s, breed);
         }
         else if(type == 2){
-            scanf("%d %s", status, name);
+            scanf("%d %s", &status, name);
             updateStatus(s, status, name);
         }
         else if(type == 3){
-
+            scanf("%s %s", name, location);
+            moveCat(s, name, location, dictionary, breedCount);
         }
     }
 }
@@ -280,3 +282,22 @@ void updateStatus(CatStore *s, int status, char *name){
     printf("%s is now %s!\n", name, STATUS_CAT[status]);
 }
 
+void moveCat(CatStore *s, char *name, char *location, char **dictionary, int breedCount){
+    Cat *cat = getCatByName(s, name);
+    Kennel *kennel = getKennelByCat(s, cat);
+
+    if(canMoveTo(s, location, cat->breed, dictionary, breedCount)){
+        removeCatFromKennel(kennel, cat);
+        for(int i =0; i < s->numKenels; i++){
+            if(strcmp(location, s->kennels[i].location) == 0){
+                s->kennels[i].cats[s->kennels[i].occupancy] = cat;
+                s->kennels[i].occupancy++;
+                printf("%s moved successfully to %s\n", name, location);
+                break;
+            }
+        }
+    }
+    else{
+        printf("%s cannot take a %s cat!\n", location, cat->breed);
+    }
+}

@@ -42,3 +42,4 @@ void freeStore(int count, CatStore *store);
 void printCatStore(CatStore *catStore, int breedCount, char **dictionary); //old function for testing if input was valid
 void printByBreed(CatStore *s, char *breed);
 void updateStatus(CatStore *s, int status, char *name);
+void moveCat(CatStore *s, char *name, char *location, char **dictionary, int breedCount);
