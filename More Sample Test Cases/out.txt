@@ -1,14 +1,17 @@
-Charlie 52.55 12 Polterland AVAILABLE
-Patra 11.15 4 Polterland AVAILABLE
-Coco 23.20 14 Auburndale AVAILABLE
-Channel 18.30 13 Auburndale AVAILABLE
-Charlie is now PENDING!
-Charlie is now ADOPTED!
-Patra 11.15 4 Polterland AVAILABLE
-Coco 23.20 14 Auburndale AVAILABLE
-Channel 18.30 13 Auburndale AVAILABLE
-Caesar moved successfully to Auburndale
-Sad moved successfully to Narnia
-Narnia cannot take a Ragdoll cat!
-Cleo is now ADOPTED!
-No cat with breed Tuxedo
+Gamma moved successfully to Catopia
+Alpha 3.00 1 Catopia AVAILABLE
+Gamma 5.00 3 Catopia AVAILABLE
+Beta 4.00 2 WhiskerVille AVAILABLE
+Catopia cannot take a Tabby cat!
+Alpha is now PENDING!
+Beta moved successfully to WhiskerVille
+Alpha 3.00 1 Catopia PENDING
+Gamma 5.00 3 Catopia AVAILABLE
+Beta 4.00 2 WhiskerVille AVAILABLE
+Alpha is now ADOPTED!
+Beta moved successfully to Catopia
+Gamma 5.00 3 Catopia AVAILABLE
+Beta 4.00 2 Catopia AVAILABLE
+Gamma is now ADOPTED!
+Beta is now ADOPTED!
+No cat with breed Tabby

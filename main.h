@@ -1,5 +1,3 @@
-const char STATUS_CAT[3][20] = {"ADOPTED", "PENDING", "AVAILABLE"};
-
 typedef struct Cat{
  char *name; // dynamically allocated space for the name without wasting space
  int age; // specifies the age of the cat

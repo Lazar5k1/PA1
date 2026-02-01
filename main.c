@@ -1,12 +1,55 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "main.h"
-#include "leak_detector_c.h"
+
+const char STATUS_CAT[3][20] = {"ADOPTED", "PENDING", "AVAILABLE"};
+
+typedef struct Cat{
+ char *name; // dynamically allocated space for the name without wasting space
+ int age; // specifies the age of the cat
+ float weight; // stores the decimal value in weight for this specific cat
+ char *breed; //points to an already allocated breed string (Ragdoll, Siamese, Maincoone, etc..). No malloc/calloc for this property
+ int status; //specifies if a cat is adopted, pending, or available, ranges from 0 to 2, initially set to available for newly added cats
+} Cat;
+
+typedef struct Kennel {
+ char *location; // dynamically allocated space for the location without wasting space
+int occupancy; // stores the current number of cats in the kennel
+ Cat **cats; // dynamically allocated array of pointers to Cats that reside in the kennel
+ int maxCapacity; // specifies the max cap to
+} Kennel;
+
+typedef struct CatStore {
+ int **capacities; //dynamically allocated double int array stores the breeds constraints for all kennels
+ int numKenels; //specifies the total number of kennels this store owns
+ Kennel *kennels; // dynamically allocated array of kennels
+} CatStore;
+
+
+char ** readBreeds(int *count);
+char* getCharPtrByBreed(char **dictionary, char *breedName, int breedCount);
+
+CatStore *createStore(int kennelCount, int breedCount, char ** dictionary);
+Kennel* createKennels(int **constraints, int kennelCount, int breedCount, char **dictionary);
+Cat **createCats(char **dictionary, int breedCount, int count);
+Cat* createSingleCat(char **dictionary, int breedCount);
+int canMoveTo(CatStore *s, char *location, char *breed, char **dictionary, int breedCount);
+Kennel *getKennelByCat(CatStore *s, Cat *cat);
+int getCatPosi(Kennel *home, Cat *cat);
+Cat *getCatByName(CatStore *s, char *catName);
+void removeCatFromKennel(Kennel *k, Cat *cat);
+void runQueries(CatStore *s, char **dictionary, int breedCount, int numQueries);
+void freeBreeds(char **dictionary, int breedCount);
+void freeStore(int count, CatStore *store);
+
+//custom functions
+void printCatStore(CatStore *catStore, int breedCount, char **dictionary); //old function for testing if input was valid
+void printByBreed(CatStore *s, char *breed);
+void updateStatus(CatStore *s, int status, char *name);
+void moveCat(CatStore *s, char *name, char *location, char **dictionary, int breedCount);
 
 
 int main(){
-    atexit(report_mem_leak);
     char **dictionary; //to store array of dynamically allocated strings for breeds types (e.g., {"Ragdoll","Siamese", "Maincoone"})
     int breedCount; //number of breed types
     int kennelCount; //number of kennels
@@ -75,10 +118,15 @@ Kennel* createKennels(int **constraints, int kennelCount, int breedCount, char *
         kennel[i].location = (char*)malloc((strlen(tempLocation)+ 1) * sizeof(char));
         strcpy(kennel[i].location, tempLocation);
         scanf("%d", &kennel[i].occupancy);
-        kennel[i].cats = createCats(dictionary, breedCount, kennel[i].occupancy); //creates, allocates, and reads input into an array of cats. Then stores them in kennel.
         kennel[i].maxCapacity = 0;
         for(int j = 0; j < breedCount; j++){
             kennel[i].maxCapacity += constraints[i][j];
+        }
+        if(kennel[i].occupancy == 0){
+            kennel[i].cats = NULL;
+        }
+        else{
+            kennel[i].cats = createCats(dictionary, breedCount, kennel[i].occupancy); //creates, allocates, and reads input into an array of cats. Then stores them in kennel.
         }
     }
 
@@ -86,10 +134,16 @@ Kennel* createKennels(int **constraints, int kennelCount, int breedCount, char *
 }
 
 Cat **createCats(char **dictionary, int breedCount, int count){ //makes cats. calls createSingleCat to make a cat.
-    Cat **catArr = (Cat**)malloc(count * sizeof(Cat*));
+    Cat **catArr;
     
-    for(int i = 0; i < count; i++){
-        catArr[i] = createSingleCat(dictionary, breedCount);
+    if(count == 0){
+        catArr = NULL;
+    }
+    else{
+        catArr = (Cat**)malloc(count * sizeof(Cat*));
+        for(int i = 0; i < count; i++){
+            catArr[i] = createSingleCat(dictionary, breedCount);
+        }
     }
 
     return catArr;
@@ -130,6 +184,7 @@ int canMoveTo(CatStore *s, char *location, char *breed, char **dictionary, int b
             for(int j = 0; j < breedCount; j++){ //finds breed index in capacities
                 if(strcmp(breed, dictionary[j]) == 0){
                     breedIndex = j;
+                    break;
                 }
             }
             if(totalBreed < s->capacities[i][breedIndex]){ //can fit or not
@@ -164,7 +219,7 @@ int getCatPosi(Kennel *home, Cat *cat){
 }
 
 Cat *getCatByName(CatStore *s, char *catName){
-    for(int i =0; i < s->numKenels; i++){
+    for(int i = 0; i < s->numKenels; i++){
         for(int j = 0; j < s->kennels[i].occupancy; j++){
             if(strcmp(catName, s->kennels[i].cats[j]->name) == 0){
                 return s->kennels[i].cats[j];
@@ -275,6 +330,9 @@ void updateStatus(CatStore *s, int status, char *name){
     Kennel *k = getKennelByCat(s, cat);
     if(status == 0){
         removeCatFromKennel(k, cat);
+        free(cat->name);
+        free(cat);
+        cat = NULL;
     }
     else{
         cat->status = status;
@@ -290,7 +348,13 @@ void moveCat(CatStore *s, char *name, char *location, char **dictionary, int bre
         removeCatFromKennel(kennel, cat);
         for(int i =0; i < s->numKenels; i++){
             if(strcmp(location, s->kennels[i].location) == 0){
-                s->kennels[i].cats[s->kennels[i].occupancy] = cat;
+                Cat **temp = malloc((s->kennels[i].occupancy + 1) * sizeof(Cat*));
+                for(int j = 0; j < s->kennels[i].occupancy; j++){
+                    temp[j] = s->kennels[i].cats[j];
+                }
+                temp[s->kennels[i].occupancy] = cat;
+                free(s->kennels[i].cats);
+                s->kennels[i].cats = temp;
                 s->kennels[i].occupancy++;
                 printf("%s moved successfully to %s\n", name, location);
                 break;
